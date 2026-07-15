@@ -3004,6 +3004,8 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [hovered360, setHovered360] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [hoveredPlot, setHoveredPlot] = useState(null);
+  const [showMobileDetails, setShowMobileDetails] = useState(false);
   const sectionRef = useRef(null);
 
   useEffect(() => {
@@ -3023,8 +3025,18 @@ export default function App() {
   }, []);
 
   const handleResetMap = () => {
-    setZoomLevel(isMobile ? 0.35 : 0.6);
-    setPanOffset({ x: isMobile ? 0 : 50, y: 50 });
+    if (isMobile) {
+      // Zoom out enough to show the full map width (approx 0.35 to 0.4)
+      setZoomLevel(0.38);
+      // Center the 900x1200 map horizontally
+      const mapScaledWidth = 900 * 0.38;
+      const screenWidth = window.innerWidth;
+      const offsetX = (screenWidth - mapScaledWidth) / 2;
+      setPanOffset({ x: offsetX, y: 20 });
+    } else {
+      setZoomLevel(0.6);
+      setPanOffset({ x: 50, y: 50 });
+    }
   };
 
   useEffect(() => {
@@ -3048,6 +3060,29 @@ export default function App() {
     setIsDragging(false);
   };
 
+  // Touch handlers for mobile
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      setDragStart({ 
+        x: e.touches[0].clientX - panOffset.x, 
+        y: e.touches[0].clientY - panOffset.y 
+      });
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    setPanOffset({
+      x: e.touches[0].clientX - dragStart.x,
+      y: e.touches[0].clientY - dragStart.y
+    });
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
   const handleZoom = (direction) => {
     setZoomLevel(prev => {
       const nextZoom = direction === 'in' ? prev + 0.15 : prev - 0.15;
@@ -3066,16 +3101,18 @@ export default function App() {
     }
   };
 
-  const plotDetails = selectedPlot ? [
-    { emoji: '🔢', label: 'Plot Number', value: `#${selectedPlot.id}`, pill: false },
-    { emoji: '🏘️', label: 'Phase', value: selectedPlot.phase, pill: false },
-    { emoji: '📐', label: 'Plot Size', value: `${selectedPlot.size} sq.ft (${Math.round(selectedPlot.size/9)} sq.yd)`, pill: false },
-    { emoji: '💰', label: 'Premium Price', value: `₹${(selectedPlot.price/100000).toFixed(1)} Lakhs`, pill: false },
-    { emoji: '🧭', label: 'Facing', value: selectedPlot.facing, pill: false },
-    { emoji: '✨', label: 'Vastu Score', value: `${selectedPlot.vastu}%`, pill: false },
-    { emoji: '✅', label: 'Status', value: selectedPlot.status === 'sold' ? 'Sold Out' : 'Available', pill: true },
+  // Show hovered plot details first; fall back to selected; fall back to empty
+  const activePlot = hoveredPlot || selectedPlot;
+  const plotDetails = activePlot ? [
+    { emoji: '🔢', label: 'Plot Number', value: `#${activePlot.id}`, pill: false },
+    { emoji: '🏘️', label: 'Phase', value: activePlot.phase, pill: false },
+    { emoji: '📐', label: 'Plot Size', value: `${activePlot.size} sq.ft (${Math.round(activePlot.size/9)} sq.yd)`, pill: false },
+    { emoji: '💰', label: 'Premium Price', value: `₹${(activePlot.price/100000).toFixed(1)} Lakhs`, pill: false },
+    { emoji: '🧭', label: 'Facing', value: activePlot.facing, pill: false },
+    { emoji: '✨', label: 'Vastu Score', value: `${activePlot.vastu}%`, pill: false },
+    { emoji: '✅', label: 'Status', value: activePlot.status === 'sold' ? 'Sold Out' : 'Available', pill: true },
   ] : [
-    { emoji: '👆', label: 'Selection', value: 'Please select a plot on the map', pill: false }
+    { emoji: '👆', label: 'Selection', value: 'Hover over a plot to see details', pill: false }
   ];
 
   return (
@@ -3131,9 +3168,10 @@ export default function App() {
         <div
           className={isVisible ? 'mp-slide-left' : 'mp-hidden'}
           style={{
+            display: isMobile && showMobileDetails ? 'none' : 'block',
             flex: isMobile ? 'none' : '1.8',
             width: '100%',
-            height: isMobile ? '60vh' : '85vh',
+            height: isMobile ? 'calc(100vh - 80px)' : '85vh',
             position: 'relative',
             marginLeft: isMobile ? '0' : '2%',
             borderRadius: 24,
@@ -3193,11 +3231,21 @@ export default function App() {
           </div>
 
           <div 
-            style={{ width: '100%', height: '100%', cursor: isDragging ? 'grabbing' : 'grab', position: 'relative' }}
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              cursor: isDragging ? 'grabbing' : 'grab', 
+              position: 'relative',
+              touchAction: 'none' /* Prevents page scroll while dragging map */
+            }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
           >
             <div 
               style={{
@@ -3215,40 +3263,91 @@ export default function App() {
               <svg viewBox="0 0 900 1200" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
                 {plots.map((plot) => {
                   const isSelected = selectedPlot?.id === plot.id && selectedPlot?.phase === plot.phase;
-                  const colors = getPlotMarkerColors(plot, isSelected);
+                  const isHovered = hoveredPlot?.id === plot.id && hoveredPlot?.phase === plot.phase;
+                  const isActive = isHovered || isSelected;
+                  const anyHovered = hoveredPlot !== null;
+                  // When something is hovered: show ONLY that plot; hide all others
+                  // When nothing hovered: show selected (if any) at full opacity, rest at dim
+                  let opacity;
+                  if (anyHovered) {
+                    opacity = isHovered ? 1 : 0;
+                  } else {
+                    opacity = isSelected ? 1 : 0.25;
+                  }
+                  const colors = getPlotMarkerColors(plot, isActive);
 
                   return (
                     <g 
                       key={`${plot.phase}-${plot.id}`} 
-                      style={{ cursor: 'pointer', transformOrigin: `${plot.x}px ${plot.y}px`, transform: 'scale(0.5)' }}
+                      style={{
+                        cursor: 'pointer',
+                        transformOrigin: `${plot.x}px ${plot.y}px`,
+                        transform: isActive ? 'scale(0.6)' : 'scale(0.4)',
+                        opacity,
+                        transition: 'opacity 0.25s ease, transform 0.2s ease',
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedPlot(plot);
+                        if (isMobile) {
+                          setShowMobileDetails(true);
+                        }
                       }}
+                      onMouseEnter={() => setHoveredPlot(plot)}
+                      onMouseLeave={() => setHoveredPlot(null)}
                     >
-                      {/* Highlight for selection */}
-                      <circle 
-                        cx={plot.x} cy={plot.y} r={isSelected ? plot.r + 10 : plot.r}
-                        fill="none" stroke="#fbbf24" strokeWidth="4"
-                        style={{ transition: 'all 0.3s ease-out', opacity: isSelected ? 1 : 0 }}
-                      />
-                      {/* Base Circle */}
+                      {/* Pulsing glow ring on hover */}
+                      {isActive && (
+                        <>
+                          {/* Outer expanding ring */}
+                          <circle
+                            cx={plot.x} cy={plot.y} r={plot.r + 18}
+                            fill="none"
+                            stroke={isSelected ? '#fbbf24' : colors.stroke}
+                            strokeWidth="2"
+                            className="svg-ring-pulse"
+                          />
+                          {/* Middle steady ring */}
+                          <circle
+                            cx={plot.x} cy={plot.y} r={plot.r + 8}
+                            fill="none"
+                            stroke={isSelected ? '#fbbf24' : colors.stroke}
+                            strokeWidth="1.5"
+                            style={{ opacity: 0.4 }}
+                          />
+                        </>
+                      )}
+                      {/* Base Circle — always a small dot */}
                       <circle 
                         cx={plot.x} cy={plot.y} r={plot.r} 
-                        fill={colors.fill} stroke={isSelected ? "#fbbf24" : colors.stroke} strokeWidth={isSelected ? 3 : 2}
+                        fill={colors.fill}
+                        stroke={isActive ? (isSelected ? '#fbbf24' : colors.stroke) : colors.stroke}
+                        strokeWidth={isActive ? 3 : 1.5}
                         style={{ transition: 'all 0.2s' }}
                       />
-                      <rect 
-                        x={plot.x - 14} y={plot.y - 8} width="28" height="16" rx="4" 
-                        fill={isSelected ? "#fbbf24" : "rgba(255, 255, 255, 0.9)"} 
-                        stroke={colors.stroke} strokeWidth="1"
-                      />
-                      <text 
-                        x={plot.x} y={plot.y + 4} textAnchor="middle" 
-                        fill={isSelected ? "#000" : "#111827"} fontSize="9" fontWeight="bold" fontFamily="monospace"
-                      >
-                        {plot.id}
-                      </text>
+                      {/* Label badge — only visible on hover or selected */}
+                      {isActive && (
+                        <>
+                          <rect 
+                            x={plot.x - 16} y={plot.y - 28} width="32" height="18" rx="5"
+                            fill={isSelected ? '#fbbf24' : '#1e293b'}
+                            stroke={isSelected ? '#f59e0b' : colors.stroke}
+                            strokeWidth="1.5"
+                          />
+                          <text 
+                            x={plot.x} y={plot.y - 15} textAnchor="middle" 
+                            fill={isSelected ? '#000' : '#ffffff'}
+                            fontSize="9" fontWeight="bold" fontFamily="monospace"
+                          >
+                            {plot.id}
+                          </text>
+                          {/* Small arrow pointing down to circle */}
+                          <polygon
+                            points={`${plot.x - 4},${plot.y - 11} ${plot.x + 4},${plot.y - 11} ${plot.x},${plot.y - 5}`}
+                            fill={isSelected ? '#fbbf24' : '#1e293b'}
+                          />
+                        </>
+                      )}
                     </g>
                   );
                 })}
@@ -3261,15 +3360,42 @@ export default function App() {
         <div
           className={isVisible ? 'mp-slide-right' : 'mp-hidden'}
           style={{
+            display: isMobile && !showMobileDetails ? 'none' : 'flex',
             flex: isMobile ? 'none' : '1',
             width: '100%',
-            display: 'flex',
             flexDirection: 'column',
             gap: 20,
             alignSelf: 'stretch',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            minHeight: isMobile ? 'calc(100vh - 80px)' : 'auto'
           }}
         >
+          {/* Mobile Back Button */}
+          {isMobile && (
+            <button
+              onClick={() => setShowMobileDetails(false)}
+              style={{
+                alignSelf: 'flex-start',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 16px',
+                background: '#f1f5f9',
+                border: '1px solid #e2e8f0',
+                borderRadius: '20px',
+                color: '#475569',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginBottom: 16
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+              Back to Map
+            </button>
+          )}
 
           {/* Heading */}
           <div>
@@ -3509,8 +3635,27 @@ export default function App() {
         }
 
         @keyframes mpPulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.4); }
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+
+        /* SVG-safe ring pulse — only animates opacity & stroke-width */
+        @keyframes svgRingPulse {
+          0%   { opacity: 0.7; stroke-width: 2; r: calc(var(--base-r) + 18px); }
+          50%  { opacity: 0.1; stroke-width: 5; }
+          100% { opacity: 0.7; stroke-width: 2; }
+        }
+
+        .svg-ring-pulse {
+          animation: svgRingPulseAnim 1.6s ease-in-out infinite;
+          transform-box: fill-box;
+          transform-origin: center;
+        }
+
+        @keyframes svgRingPulseAnim {
+          0%   { opacity: 0.8; transform: scale(1); }
+          50%  { opacity: 0;   transform: scale(1.6); }
+          100% { opacity: 0.8; transform: scale(1); }
         }
       `}</style>
     </div>
