@@ -2994,138 +2994,42 @@ const initialPlotsData = [
 
 export default function App() {
   const [plots, setPlots] = useState(initialPlotsData);
-
-  const [selectedPlot, setSelectedPlot] = useState(plots[0] || initialPlotsData[0]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [phaseFilter, setPhaseFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [maxPrice, setMaxPrice] = useState(6000000); // 60 Lakhs
-  const [language, setLanguage] = useState("hi"); // Default to Hindi as per request
-  const [activeTab, setActiveTab] = useState("map"); 
+  const [selectedPlot, setSelectedPlot] = useState(null);
+  
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [activeBeacon, setActiveBeacon] = useState(null);
-  const [isMapperMode, setIsMapperMode] = useState(false);
 
-  // Booking Form state
-  const [bookingName, setBookingName] = useState("");
-  const [bookingPhone, setBookingPhone] = useState("");
-  const [bookingEmail, setBookingEmail] = useState("");
-  const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [bookingError, setBookingError] = useState("");
-
-  // EMI Calculator state
-  const [downPayment, setDownPayment] = useState(1000000); 
-  const [interestRate, setInterestRate] = useState(8.75); 
-  const [loanTenure, setLoanTenure] = useState(15); 
-
-  // Map viewport DOM reference
-  const mapContainerRef = useRef(null);
-
-  const dict = {
-    en: {
-      title: "Royal Meadows Layout Plan",
-      subtitle: "Interactive RERA Approved Township Plot Navigator",
-      imageRef: "Viewing Image: WhatsApp Image 2026-06-30 at 20.11.01.jpeg",
-      searchPlaceholder: "Search plot number (e.g., 33, 114, 17)...",
-      filters: "Quick Filters",
-      phaseLabel: "Township Phase",
-      statusLabel: "Plot Status",
-      priceRange: "Max Budget",
-      allPhases: "All Phases",
-      allStatus: "All Status",
-      available: "Available",
-      sold: "Sold Out",
-      detailsTitle: "Selected Plot Dossier",
-      plotNo: "Plot Number",
-      phase: "Layout Phase",
-      size: "Plot Dimension",
-      price: "Premium Price",
-      facing: "Vastu Direction",
-      vastuScore: "Vastu Compliance",
-      emiCalc: "Land Loan Monthly EMI Calculator",
-      downPayment: "Down Payment Amount",
-      interestRate: "Annual Interest Rate",
-      tenure: "Tenure Period",
-      monthlyEmi: "Approx. Monthly EMI",
-      bookBtn: "Submit Expression of Interest",
-      bookTitle: "Instant Registry & Booking Request",
-      fullName: "Your Full Name",
-      phone: "Mobile (WhatsApp verified)",
-      email: "Email Address",
-      successMsg: "Your EOI has been submitted successfully! Relationship Manager will call with registry paper checklist within 15 mins.",
-      legendPhase1: "Phase-1: Grey (Sold), Red (Available)",
-      legendPhase2: "Phase-2: Grey (Sold), White (Available)",
-      mapHint: "Double-click to reset view. Drag to pan and hover to inspect properties.",
-      alertSelect: "Select an interactive plot to load spatial telemetry details."
-    },
-    hi: {
-      title: "रॉयल मीडोज लेआउट प्लान",
-      subtitle: "इंटरएक्टिव रेरा (RERA) स्वीकृत टाउनशिप प्लॉट नेविगेटर",
-      imageRef: "लेआउट इमेज: WhatsApp Image 2026-06-30 at 20.11.01.jpeg",
-      searchPlaceholder: "प्लॉट नंबर खोजें (जैसे, 33, 114, 17)...",
-      filters: "त्वरित फ़िल्टर",
-      phaseLabel: "टाउनशिप फेज",
-      statusLabel: "प्लॉट की स्थिति",
-      priceRange: "अधिकतम बजट",
-      allPhases: "सभी फेज",
-      allStatus: "सभी स्थिति",
-      available: "उपलब्ध",
-      sold: "बिक चुका है",
-      detailsTitle: "चयनित प्लॉट का पूरा विवरण",
-      plotNo: "प्लॉट संख्या",
-      phase: "लेआउट फेज",
-      size: "प्लॉट का क्षेत्रफल",
-      price: "प्रीमियम कीमत",
-      facing: "वास्तु दिशा",
-      vastuScore: "वास्तु अनुपालन",
-      emiCalc: "भूमि ऋण मासिक EMI कैलकुलेटर",
-      downPayment: "डाउन पेमेंट राशि",
-      interestRate: "वार्षिक ब्याज दर",
-      tenure: "ऋण अवधि",
-      monthlyEmi: "अनुमानित मासिक EMI",
-      bookBtn: "बुकिंग की पुष्टि के लिए सबमिट करें",
-      bookTitle: "त्वरित रजिस्ट्री और बुकिंग अनुरोध",
-      fullName: "आपका पूरा नाम",
-      phone: "मोबाइल नंबर (WhatsApp सत्यापित)",
-      email: "ईमेल पता",
-      successMsg: "आपका आवेदन सफलतापूर्वक सबमिट हो गया है! हमारे प्रबंधक अगले 15 मिनट में रजिस्ट्री दस्तावेजों की सूची के साथ संपर्क करेंगे।",
-      legendPhase1: "फेज-1: ग्रे (बिक चुका), लाल (उपलब्ध)",
-      legendPhase2: "फेज-2: ग्रे (बिक चुका), सफेद (उपलब्ध)",
-      mapHint: "व्यू को रीसेट करने के लिए डबल-क्लिक करें। पैन करने के लिए ड्रैग करें और प्लॉट पर होवर करें।",
-      alertSelect: "प्लॉट के स्थानिक टेलीमेट्री विवरण लोड करने के लिए मैप पर क्लिक करें।"
-    }
-  };
-
-  const t = dict[language];
-
-  const filteredPlots = useMemo(() => {
-    return plots.filter(plot => {
-      const matchesSearch = plot.id.toLowerCase().includes(searchQuery.trim().toLowerCase());
-      const matchesPhase = phaseFilter === "all" || plot.phase === phaseFilter;
-      const matchesStatus = statusFilter === "all" || plot.status === statusFilter;
-      const matchesPrice = plot.price <= maxPrice || plot.status === "sold";
-      return matchesSearch && matchesPhase && matchesStatus && matchesPrice;
-    });
-  }, [plots, searchQuery, phaseFilter, statusFilter, maxPrice]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [hovered360, setHovered360] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef(null);
 
   useEffect(() => {
-    if (searchQuery.trim()) {
-      const matched = plots.find(p => p.id === searchQuery.trim());
-      if (matched) {
-        setSelectedPlot(matched);
-        setPanOffset({
-          x: 200 - matched.x * zoomLevel,
-          y: 300 - matched.y * zoomLevel
-        });
-        setActiveBeacon(matched.id);
-      }
-    } else {
-      setActiveBeacon(null);
-    }
-  }, [searchQuery]);
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setIsVisible(true); },
+      { threshold: 0.1 }
+    );
+    if (sectionRef.current) observer.observe(sectionRef.current);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      observer.disconnect();
+    };
+  }, []);
+
+  const handleResetMap = () => {
+    setZoomLevel(isMobile ? 0.35 : 0.6);
+    setPanOffset({ x: isMobile ? 0 : 50, y: 50 });
+  };
+
+  useEffect(() => {
+    handleResetMap();
+  }, [isMobile]);
 
   const handleMouseDown = (e) => {
     setIsDragging(true);
@@ -3146,502 +3050,469 @@ export default function App() {
 
   const handleZoom = (direction) => {
     setZoomLevel(prev => {
-      const nextZoom = direction === 'in' ? prev + 0.25 : prev - 0.25;
-      return Math.min(Math.max(nextZoom, 0.4), 3.0);
+      const nextZoom = direction === 'in' ? prev + 0.15 : prev - 0.15;
+      return Math.min(Math.max(nextZoom, 0.25), 3.0);
     });
-  };
-
-  const handleResetMap = () => {
-    // Set zoom to 0.5 to fit the 1200px image inside the 640px container height
-    setZoomLevel(0.5);
-    setPanOffset({ x: window.innerWidth >= 1024 ? 200 : window.innerWidth >= 768 ? 100 : 0, y: 20 });
-    setActiveBeacon(null);
-  };
-
-  // Run initial zoom adjustment once layout is ready
-  useEffect(() => {
-    handleResetMap();
-  }, []);
-
-  const emiDetails = useMemo(() => {
-    if (!selectedPlot) return { principal: 0, monthly: 0 };
-    const price = selectedPlot.price;
-    const principal = Math.max(0, price - downPayment);
-    const r = interestRate / 12 / 100;
-    const n = loanTenure * 12;
-    let monthly = 0;
-    if (principal > 0 && r > 0) {
-      monthly = (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-    } else if (principal > 0) {
-      monthly = principal / n;
-    }
-    return {
-      principal: principal,
-      monthly: Math.round(monthly)
-    };
-  }, [selectedPlot, downPayment, interestRate, loanTenure]);
-
-  const handleBookingSubmit = (e) => {
-    e.preventDefault();
-    if (!bookingName || !bookingPhone || !bookingEmail) {
-      setBookingError("कृपया सभी फ़ील्ड भरें।");
-      return;
-    }
-    setBookingError("");
-    setBookingSuccess(true);
-    
-    // Instantly simulate booking update
-    setPlots(prev => prev.map(p => p.id === selectedPlot.id ? { ...p, status: 'sold' } : p));
-    setSelectedPlot(prev => ({ ...prev, status: 'sold' }));
-
-    setTimeout(() => {
-      setBookingSuccess(false);
-      setBookingName("");
-      setBookingPhone("");
-      setBookingEmail("");
-    }, 6000);
   };
 
   const getPlotMarkerColors = (plot, isSelected) => {
     if (plot.status === "sold") {
-      return {
-        fill: "rgba(100, 116, 139, 0.3)",
-        stroke: "rgba(148, 163, 184, 0.9)",
-        glowingPulse: "rgba(148, 163, 184, 0.3)",
-        text: "#94a3b8"
-      };
+      return { fill: "rgba(100, 116, 139, 0.3)", stroke: "rgba(148, 163, 184, 0.9)", text: "#94a3b8" };
     }
-    
-    // Match colors exactly to Phase instructions on the WhatsApp layout map
     if (plot.phase === "Phase-1") {
-      return {
-        fill: isSelected ? "rgba(239, 68, 68, 0.75)" : "rgba(239, 68, 68, 0.45)",
-        stroke: "#ef4444",
-        glowingPulse: "rgba(239, 68, 68, 0.6)",
-        text: "#ffffff"
-      };
+      return { fill: isSelected ? "rgba(239, 68, 68, 0.75)" : "rgba(239, 68, 68, 0.45)", stroke: "#ef4444", text: "#ffffff" };
     } else {
-      return {
-        fill: isSelected ? "rgba(59, 130, 246, 0.75)" : "rgba(59, 130, 246, 0.45)",
-        stroke: "#3b82f6",
-        glowingPulse: "rgba(59, 130, 246, 0.6)",
-        text: "#ffffff"
-      };
+      return { fill: isSelected ? "rgba(59, 130, 246, 0.75)" : "rgba(59, 130, 246, 0.45)", stroke: "#3b82f6", text: "#ffffff" };
     }
   };
 
+  const plotDetails = selectedPlot ? [
+    { emoji: '🔢', label: 'Plot Number', value: `#${selectedPlot.id}`, pill: false },
+    { emoji: '🏘️', label: 'Phase', value: selectedPlot.phase, pill: false },
+    { emoji: '📐', label: 'Plot Size', value: `${selectedPlot.size} sq.ft (${Math.round(selectedPlot.size/9)} sq.yd)`, pill: false },
+    { emoji: '💰', label: 'Premium Price', value: `₹${(selectedPlot.price/100000).toFixed(1)} Lakhs`, pill: false },
+    { emoji: '🧭', label: 'Facing', value: selectedPlot.facing, pill: false },
+    { emoji: '✨', label: 'Vastu Score', value: `${selectedPlot.vastu}%`, pill: false },
+    { emoji: '✅', label: 'Status', value: selectedPlot.status === 'sold' ? 'Sold Out' : 'Available', pill: true },
+  ] : [
+    { emoji: '👆', label: 'Selection', value: 'Please select a plot on the map', pill: false }
+  ];
+
   return (
-    <div className="w-screen h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-400 selection:text-slate-900 overflow-hidden">
-      
-      <main className="flex-1 w-full h-full flex flex-col">
-        
-        {/* VIEWPORT CONTROLS AND SEARCH */}
-        <div className="w-full h-full flex flex-col">
+    <div
+      ref={sectionRef}
+      style={{
+        background: '#ffffff',
+        minHeight: '100vh',
+        padding: isMobile ? '40px 20px' : '40px 72px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Subtle top border line */}
+      <div style={{
+        position: 'absolute', top: 0, left: '8%', right: '8%', height: 1,
+        background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent)',
+      }} />
+
+      {/* Decorative dots grid - Neutral */}
+      <div style={{
+        position: 'absolute', top: 60, right: 40,
+        width: 180, height: 180,
+        backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.05) 1.5px, transparent 1.5px)',
+        backgroundSize: '18px 18px',
+        opacity: 0.8,
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute', bottom: 60, left: 30,
+        width: 130, height: 130,
+        backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.05) 1.5px, transparent 1.5px)',
+        backgroundSize: '18px 18px',
+        opacity: 0.8,
+        pointerEvents: 'none',
+      }} />
+
+      {/* Main layout */}
+      <div style={{
+        width: '100%',
+        maxWidth: '1700px',
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: isMobile ? '64px' : '10%',
+        alignItems: 'flex-start',
+      }}>
+
+        {/* LEFT: Map */}
+        <div
+          className={isVisible ? 'mp-slide-left' : 'mp-hidden'}
+          style={{
+            flex: isMobile ? 'none' : '1.8',
+            width: '100%',
+            height: isMobile ? '60vh' : '85vh',
+            position: 'relative',
+            marginLeft: isMobile ? '0' : '2%',
+            borderRadius: 24,
+            background: '#f8fafc',
+            border: '1px solid rgba(0,0,0,0.05)',
+            boxShadow: '0 20px 40px -10px rgba(0,0,0,0.05)',
+            overflow: 'hidden'
+          }}
+        >
+          {/* Map Controls */}
+          <div style={{
+            position: 'absolute', top: 16, right: 16, zIndex: 10,
+            display: 'flex', flexDirection: 'column', gap: 8
+          }}>
+            <button 
+              onClick={() => handleZoom('in')}
+              style={{
+                width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.9)',
+                border: '1px solid rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+              }}
+            >
+              <ZoomIn size={16} color="#111827" />
+            </button>
+            <button 
+              onClick={() => handleZoom('out')}
+              style={{
+                width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.9)',
+                border: '1px solid rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+              }}
+            >
+              <ZoomOut size={16} color="#111827" />
+            </button>
+            <button 
+              onClick={handleResetMap}
+              style={{
+                width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.9)',
+                border: '1px solid rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+              }}
+            >
+              <Maximize size={16} color="#111827" />
+            </button>
+          </div>
           
+          {/* Legend */}
+          <div style={{
+            position: 'absolute', bottom: 16, left: 16, zIndex: 10,
+            background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)',
+            borderRadius: 12, padding: '8px 12px', border: '1px solid rgba(0,0,0,0.1)',
+            fontSize: 10, fontWeight: 600, color: '#4b5563', display: 'flex', flexDirection: 'column', gap: 4
+          }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }}></span> Phase 1
+             </div>
+             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6' }}></span> Phase 2
+             </div>
+          </div>
 
-          {/* INTERACTIVE TOWNSHIP MAP ENGINE */}
-          {activeTab === "map" ? (
-            <div className="bg-slate-900 overflow-hidden relative flex flex-col flex-1 w-full h-full">
-              
-              {/* Selected Plot Indicator */}
-              {selectedPlot && (
-                <div className="absolute top-4 left-4 z-20 bg-slate-900/95 border border-slate-700 rounded-2xl px-5 py-4 shadow-2xl backdrop-blur-md min-w-[200px]">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Selected Plot</span>
-                  <div className="flex items-center gap-3">
-                    <span className="text-4xl font-black text-amber-400 font-mono">#{selectedPlot.id}</span>
-                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase border ${
-                      selectedPlot.status === 'sold' ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                    }`}>
-                      {selectedPlot.status}
-                    </span>
-                  </div>
-                </div>
-              )}
+          <div 
+            style={{ width: '100%', height: '100%', cursor: isDragging ? 'grabbing' : 'grab', position: 'relative' }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            <div 
+              style={{
+                position: 'absolute', transformOrigin: 'top left', transition: 'transform 0.1s ease-out',
+                transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+                width: '900px', height: '1200px'
+              }}
+            >
+              <img
+                src="/map.jpg"
+                alt="Master Plan Map"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none', userSelect: 'none' }}
+              />
 
-              {/* Map floating controls */}
-              <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
-                <button 
-                  onClick={() => setIsMapperMode(!isMapperMode)} 
-                  className={`p-2.5 rounded-xl shadow-lg transition-all ${isMapperMode ? 'bg-amber-500 text-slate-900 border-amber-400' : 'bg-slate-950/90 border border-slate-800 text-slate-200 hover:text-white hover:bg-slate-800'}`}
-                  title="Toggle Mapper Mode"
-                >
-                  <PenTool className="h-4 w-4" />
-                </button>
-                <button 
-                  onClick={() => handleZoom('in')} 
-                  className="bg-slate-950/90 border border-slate-800 text-slate-200 hover:text-white hover:bg-slate-800 p-2.5 rounded-xl shadow-lg transition-all"
-                  title="Zoom In"
-                >
-                  <ZoomIn className="h-4 w-4" />
-                </button>
-                <button 
-                  onClick={() => handleZoom('out')} 
-                  className="bg-slate-950/90 border border-slate-800 text-slate-200 hover:text-white hover:bg-slate-800 p-2.5 rounded-xl shadow-lg transition-all"
-                  title="Zoom Out"
-                >
-                  <ZoomOut className="h-4 w-4" />
-                </button>
-                <button 
-                  onClick={handleResetMap} 
-                  className="bg-slate-950/90 border border-slate-800 text-slate-200 hover:text-white hover:bg-slate-800 p-2.5 rounded-xl shadow-lg transition-all"
-                  title="Reset View"
-                >
-                  <Maximize className="h-4 w-4" />
-                </button>
-              </div>
+              <svg viewBox="0 0 900 1200" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+                {plots.map((plot) => {
+                  const isSelected = selectedPlot?.id === plot.id && selectedPlot?.phase === plot.phase;
+                  const colors = getPlotMarkerColors(plot, isSelected);
 
-              {/* Instructions and hints */}
-              <div className="absolute bottom-4 left-4 z-20 bg-slate-950/90 border border-slate-800 rounded-lg px-3 py-2 text-[10px] text-slate-400 max-w-xs pointer-events-none backdrop-blur shadow-md">
-                <p className="font-semibold text-emerald-400 flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
-                  Interactive Blueprint Navigation
-                </p>
-                <p className="mt-1 leading-normal">{t.mapHint}</p>
-              </div>
-
-              {/* THE WORKSPACE CANVAS AREA */}
-              <div 
-                ref={mapContainerRef}
-                className="w-full h-full relative overflow-hidden bg-slate-950 cursor-grab active:cursor-grabbing select-none"
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                onDoubleClick={handleResetMap}
-              >
-                {/* MAPPER MODE OUTPUT */}
-                {isMapperMode && (
-                  <div className="absolute bottom-4 right-4 z-50 bg-slate-900 border border-amber-500 rounded-xl p-4 shadow-2xl w-96" onMouseDown={(e) => e.stopPropagation()}>
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-amber-500 font-bold">Mapper Mode Active</h3>
-                      <button 
-                        onClick={() => {
-                          const phase2Plots = plots.filter(p => p.phase === "Phase-2");
-                          navigator.clipboard.writeText(JSON.stringify(phase2Plots, null, 2));
-                          alert("Phase 2 array copied to clipboard!");
-                        }}
-                        className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-1 rounded hover:bg-amber-500/40 transition-colors font-bold"
+                  return (
+                    <g 
+                      key={`${plot.phase}-${plot.id}`} 
+                      style={{ cursor: 'pointer', transformOrigin: `${plot.x}px ${plot.y}px`, transform: 'scale(0.5)' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPlot(plot);
+                      }}
+                    >
+                      {/* Highlight for selection */}
+                      <circle 
+                        cx={plot.x} cy={plot.y} r={isSelected ? plot.r + 10 : plot.r}
+                        fill="none" stroke="#fbbf24" strokeWidth="4"
+                        style={{ transition: 'all 0.3s ease-out', opacity: isSelected ? 1 : 0 }}
+                      />
+                      {/* Base Circle */}
+                      <circle 
+                        cx={plot.x} cy={plot.y} r={plot.r} 
+                        fill={colors.fill} stroke={isSelected ? "#fbbf24" : colors.stroke} strokeWidth={isSelected ? 3 : 2}
+                        style={{ transition: 'all 0.2s' }}
+                      />
+                      <rect 
+                        x={plot.x - 14} y={plot.y - 8} width="28" height="16" rx="4" 
+                        fill={isSelected ? "#fbbf24" : "rgba(255, 255, 255, 0.9)"} 
+                        stroke={colors.stroke} strokeWidth="1"
+                      />
+                      <text 
+                        x={plot.x} y={plot.y + 4} textAnchor="middle" 
+                        fill={isSelected ? "#000" : "#111827"} fontSize="9" fontWeight="bold" fontFamily="monospace"
                       >
-                        Copy Phase 2 Array
-                      </button>
-                    </div>
-                    <p className="text-xs text-slate-300 mb-2">Click anywhere to add/move a plot. Right-click an existing plot to delete it.</p>
-                    <textarea 
-                      readOnly 
-                      className="w-full h-40 bg-slate-950 text-emerald-400 font-mono text-[10px] p-2 rounded border border-slate-700 cursor-text"
-                      onMouseDown={(e) => e.stopPropagation()}
-                      value={JSON.stringify(plots.filter(p => p.phase === "Phase-2"), null, 2)}
-                    />
-                  </div>
-                )}
-
-                {/* TRANSFORM LAYER */}
-                <div 
-                  className="absolute origin-top-left transition-transform duration-75 ease-out"
-                  style={{
-                    transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-                    width: '900px',
-                    height: '1200px'
-                  }}
-                >
-                  {/* Township Map Base Image */}
-                  <img 
-                    src="map.jpg" 
-                    alt="WhatsApp Image 2026-06-30 at 20.11.01.jpeg"
-                    className="w-full h-full object-contain pointer-events-none select-none brightness-95"
-                  />
-
-                  {/* INTERACTIVE COORDINATE OVERLAYS */}
-                  <svg 
-                    viewBox="0 0 900 1200" 
-                    className={`absolute inset-0 w-full h-full select-none ${isMapperMode ? 'cursor-crosshair' : ''}`}
-                    onClick={(e) => {
-                      if (!isMapperMode) return;
-                      const svg = e.currentTarget;
-                      const pt = svg.createSVGPoint();
-                      pt.x = e.clientX;
-                      pt.y = e.clientY;
-                      const cursorPt = pt.matrixTransform(svg.getScreenCTM().inverse());
-                      
-                      const plotId = window.prompt("Enter Plot Number:");
-                      if (!plotId) return;
-
-                      let plotPhase = "Phase-2";
-                      const phaseInput = window.prompt("Enter Phase (1 or 2):", "2");
-                      if (phaseInput && phaseInput.includes("1")) {
-                        plotPhase = "Phase-1";
-                      }
-
-                      const existingIndex = plots.findIndex(p => p.id === plotId && p.phase === plotPhase);
-                      if (existingIndex !== -1) {
-                        if (window.confirm(`Plot ${plotId} in ${plotPhase} already exists! Update its position?`)) {
-                          setPlots(prev => {
-                            const newPlots = [...prev];
-                            newPlots[existingIndex] = { ...newPlots[existingIndex], x: Math.round(cursorPt.x), y: Math.round(cursorPt.y) };
-                            return newPlots;
-                          });
-                        }
-                        return;
-                      }
-
-                      const newPlot = {
-                        id: plotId,
-                        phase: plotPhase,
-                        status: "available",
-                        size: 1000,
-                        price: 3000000,
-                        facing: "East",
-                        vastu: 90,
-                        type: "Standard",
-                        description: "Auto-mapped plot.",
-                        x: Math.round(cursorPt.x),
-                        y: Math.round(cursorPt.y),
-                        r: 14
-                      };
-                      setPlots(prev => [...prev, newPlot]);
-                    }}
-                  >
-                    
-                    {/* Visual landmarks */}
-                    <g opacity="0.3" className="pointer-events-none">
-                      <rect x="420" y="210" width="160" height="110" rx="10" fill="#22c55e" />
-                      <text x="500" y="265" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="bold">COMMUNITY GREEN</text>
-                      
-                      <rect x="480" y="470" width="130" height="90" rx="10" fill="#22c55e" />
-                      <text x="545" y="520" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="bold">CENTRAL GARDEN</text>
+                        {plot.id}
+                      </text>
                     </g>
-
-                    {/* DYNAMIC HOTSPOTS */}
-                    {filteredPlots.map((plot) => {
-                      const isSelected = selectedPlot?.id === plot.id && selectedPlot?.phase === plot.phase;
-                      const isBeacon = activeBeacon === plot.id;
-                      const colors = getPlotMarkerColors(plot, isSelected);
-
-                      return (
-                        <g 
-                          key={`${plot.phase}-${plot.id}`} 
-                          className="cursor-pointer"
-                          style={{ transformOrigin: `${plot.x}px ${plot.y}px`, transform: 'scale(0.5)' }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedPlot(plot);
-                          }}
-                          onContextMenu={(e) => {
-                            if (isMapperMode) {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (window.confirm(`Delete plot ${plot.id} from ${plot.phase}?`)) {
-                                setPlots(prev => prev.filter(p => !(p.id === plot.id && p.phase === plot.phase)));
-                              }
-                            }
-                          }}
-                        >
-                          {/* Gentle glowing aura for available plots */}
-                          {plot.status === "available" && (
-                            <circle 
-                              cx={plot.x} 
-                              cy={plot.y} 
-                              r={isSelected ? plot.r + 12 : plot.r + 6}
-                              fill="none"
-                              stroke={colors.stroke}
-                              strokeWidth="2"
-                              className="transition-all duration-500 ease-in-out opacity-40 animate-pulse"
-                            />
-                          )}
-
-                          {/* Outer highlight for selection */}
-                          <circle 
-                            cx={plot.x} 
-                            cy={plot.y} 
-                            r={isSelected ? plot.r + 8 : plot.r}
-                            fill="none"
-                            stroke="#fbbf24"
-                            strokeWidth="3"
-                            className={`transition-all duration-300 ease-out ${isSelected ? 'opacity-100' : 'opacity-0'}`}
-                          />
-
-                          {/* Base Plot Circle */}
-                          <circle 
-                            cx={plot.x} 
-                            cy={plot.y} 
-                            r={plot.r} 
-                            fill={colors.fill}
-                            stroke={isSelected ? "#fbbf24" : colors.stroke}
-                            strokeWidth={isSelected ? 3 : 2}
-                            className="transition-all duration-200 hover:scale-125"
-                          />
-
-                          {/* Text background badge */}
-                          <rect 
-                            x={plot.x - 14} 
-                            y={plot.y - 8} 
-                            width="28" 
-                            height="16" 
-                            rx="4" 
-                            fill={isSelected ? "#fbbf24" : "rgba(15, 23, 42, 0.9)"} 
-                            stroke={colors.stroke}
-                            strokeWidth="1"
-                          />
-
-                          {/* Plot Label */}
-                          <text 
-                            x={plot.x} 
-                            y={plot.y + 4} 
-                            textAnchor="middle" 
-                            fill={isSelected ? "#0f172a" : colors.text} 
-                            fontSize="9" 
-                            fontWeight="black"
-                            className="font-mono"
-                          >
-                            {plot.id}
-                          </text>
-
-                          {/* Pulsing Beacon locator for search action */}
-                          {isBeacon && (
-                            <g>
-                              <circle 
-                                cx={plot.x} 
-                                cy={plot.y} 
-                                r="45" 
-                                fill="none" 
-                                stroke="#f59e0b" 
-                                strokeWidth="2.5" 
-                                strokeDasharray="5,5" 
-                                className="animate-spin"
-                              />
-                            </g>
-                          )}
-                        </g>
-                      );
-                    })}
-
-                  </svg>
-                </div>
-
-              </div>
-
-              {/* MAP VISUAL LEGENDS BAR */}
-              <div className="bg-slate-950 border-t border-slate-800 p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-300">
-                
-                <div className="flex flex-col gap-2">
-                  <p className="font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-red-500"></span> Phase-1 Sector Rules:
-                  </p>
-                  <div className="flex gap-4 items-center">
-                    <span className="flex items-center gap-1.5">
-                      <span className="h-3 w-5 rounded bg-red-500/45 border border-red-500"></span>
-                      <span>Red = Available ({t.available})</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="h-3 w-5 rounded bg-slate-500/20 border border-slate-500"></span>
-                      <span>Grey = Sold Out ({t.sold})</span>
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 border-l border-slate-800 pl-0 md:pl-4">
-                  <p className="font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-white"></span> Phase-2 Sector Rules:
-                  </p>
-                  <div className="flex gap-4 items-center">
-                    <span className="flex items-center gap-1.5">
-                      <span className="h-3 w-5 rounded bg-white/45 border border-white"></span>
-                      <span>White = Available ({t.available})</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="h-3 w-5 rounded bg-slate-500/20 border border-slate-500"></span>
-                      <span>Grey = Sold Out ({t.sold})</span>
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-
+                  );
+                })}
+              </svg>
             </div>
-          ) : (
-            
-            /* SPREADSHEET-STYLE PLOT INDEX LIST */
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-950 border-b border-slate-800 text-slate-400 text-[11px] font-bold uppercase tracking-wider">
-                      <th className="p-4">{t.plotNo}</th>
-                      <th className="p-4">{t.phase}</th>
-                      <th className="p-4">{t.size}</th>
-                      <th className="p-4">{t.facing}</th>
-                      <th className="p-4">{t.vastuScore}</th>
-                      <th className="p-4">{t.price}</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-850 text-xs">
-                    {filteredPlots.map((plot) => {
-                      const isSelected = selectedPlot?.id === plot.id;
-                      return (
-                        <tr 
-                          key={plot.id} 
-                          onClick={() => {
-                            setSelectedPlot(plot);
-                            setActiveTab("map");
-                            setPanOffset({ x: 200 - plot.x, y: 150 - plot.y });
-                          }}
-                          className={`hover:bg-slate-850/60 cursor-pointer transition-colors ${isSelected ? 'bg-slate-800/80 font-semibold text-emerald-400' : 'text-slate-300'}`}
-                        >
-                          <td className="p-4 font-mono font-bold text-sm text-amber-400">Plot #{plot.id}</td>
-                          <td className="p-4 font-medium">{plot.phase}</td>
-                          <td className="p-4 font-mono">{plot.size} Sq.Ft. <span className="text-[10px] text-slate-500">({Math.round(plot.size/9)} Gaj)</span></td>
-                          <td className="p-4">
-                            <span className="flex items-center gap-1">
-                              <Compass className="h-3.5 w-3.5 text-slate-500" />
-                              {plot.facing}
-                            </span>
-                          </td>
-                          <td className="p-4">
-                            <span className="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded text-[11px] font-bold font-mono">
-                              {plot.vastu}% Vastu
-                            </span>
-                          </td>
-                          <td className="p-4 font-mono font-bold text-amber-500">
-                            {plot.status === "sold" ? "—" : `₹${(plot.price/100000).toFixed(1)} Lakhs`}
-                          </td>
-                          <td className="p-4">
-                            <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase border ${
-                              plot.status === 'sold' ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                            }`}>
-                              {plot.status}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right">
-                            <button className="text-emerald-500 hover:text-emerald-400 font-bold flex items-center justify-end gap-1 ml-auto">
-                              Locate Map <ChevronRight className="h-3 w-3" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {filteredPlots.length === 0 && (
-                      <tr>
-                        <td colSpan="8" className="p-8 text-center text-slate-500 italic">
-                          No matching plots found in this phase.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
+          </div>
         </div>
 
+        {/* RIGHT: Details panel */}
+        <div
+          className={isVisible ? 'mp-slide-right' : 'mp-hidden'}
+          style={{
+            flex: isMobile ? 'none' : '1',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 20,
+            alignSelf: 'stretch',
+            justifyContent: 'center'
+          }}
+        >
 
+          {/* Heading */}
+          <div>
+            <p style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontStyle: 'italic',
+              fontSize: 'clamp(14px, 1.5vw, 16px)',
+              color: '#4b5563',
+              margin: '0 0 6px 0',
+              letterSpacing: '0.02em',
+            }}>
+              Discover your perfect space
+            </p>
+            <h3 style={{
+              fontSize: 'clamp(24px, 3vw, 44px)',
+              color: '#111827',
+              fontFamily: "'Montserrat', sans-serif",
+              fontWeight: 900,
+              margin: 0,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              lineHeight: 1.05,
+            }}>
+              PLOT
+              <br />
+              <span style={{ color: '#6b7280' }}>DETAILS</span>
+            </h3>
+            {/* Thin accent line */}
+            <div style={{
+              marginTop: 12,
+              width: 56, height: 3,
+              background: 'linear-gradient(90deg, #111827, transparent)',
+              borderRadius: 2,
+            }} />
+          </div>
 
-      </main>
+          {/* Plot detail rows */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0, minHeight: '300px' }}>
+            {plotDetails.map((item, i) => (
+              <div
+                key={i}
+                className={isVisible ? `mp-row mp-row-delay-${i}` : 'mp-hidden'}
+              >
+                {/* Row */}
+                <div style={{
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '16px 0',
+                }}>
+                  {/* Left: icon + label */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: '50%',
+                      background: 'rgba(0,0,0,0.03)',
+                      border: '1px solid rgba(0,0,0,0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 16, flexShrink: 0,
+                    }}>
+                      {item.emoji}
+                    </div>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700,
+                      textTransform: 'uppercase', letterSpacing: '0.14em',
+                      color: '#4b5563',
+                      fontFamily: "'Montserrat', sans-serif",
+                    }}>
+                      {item.label}
+                    </span>
+                  </div>
 
+                  {/* Right: value */}
+                  {item.pill ? (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      background: item.value === 'Available' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #64748b, #475569)',
+                      borderRadius: 30, padding: '5px 14px',
+                    }}>
+                      <span style={{
+                        width: 5, height: 5, borderRadius: '50%',
+                        background: '#ffffff', opacity: 0.9,
+                        display: 'inline-block',
+                        animation: 'mpPulse 2s infinite',
+                      }} />
+                      <span style={{
+                        fontSize: 9, fontWeight: 800,
+                        textTransform: 'uppercase', letterSpacing: '0.1em',
+                        color: '#ffffff',
+                        fontFamily: "'Montserrat', sans-serif",
+                      }}>
+                        {item.value}
+                      </span>
+                    </div>
+                  ) : (
+                    <span style={{
+                      fontSize: 13,
+                      fontWeight: 800, color: '#111827',
+                      fontFamily: "'Montserrat', sans-serif",
+                      letterSpacing: '0.02em',
+                    }}>
+                      {item.value}
+                    </span>
+                  )}
+                </div>
 
+                {/* Divider (not after last) */}
+                {i < plotDetails.length - 1 && (
+                  <div style={{
+                    height: 1,
+                    background: 'linear-gradient(90deg, rgba(0,0,0,0.1), rgba(0,0,0,0.02), transparent)',
+                  }} />
+                )}
+              </div>
+            ))}
+          </div>
 
+          {/* 360° Tour Card */}
+          <div
+            onClick={() => alert("360 Tour feature coming soon!")}
+            onMouseEnter={() => setHovered360(true)}
+            onMouseLeave={() => setHovered360(false)}
+            className={isVisible ? 'mp-row mp-row-delay-3' : 'mp-hidden'}
+            style={{
+              position: 'relative',
+              borderRadius: 20,
+              overflow: 'hidden',
+              cursor: 'pointer',
+              width: '85%',
+              alignSelf: 'flex-start',
+              height: isMobile ? '200px' : '200px',
+              marginTop: isMobile ? '32px' : '0',
+              transform: hovered360 ? 'translateY(-6px) scale(1.015)' : 'translateY(0) scale(1)',
+              transition: 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+            }}
+          >
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(135deg, #1f2937, #111827)',
+            }} />
+
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: hovered360
+                ? 'linear-gradient(120deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 100%)'
+                : 'linear-gradient(120deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%)',
+              transition: 'background 0.4s',
+            }} />
+
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center',
+              padding: '0 32px', gap: 22,
+            }}>
+              <div style={{
+                width: 50, height: 50, borderRadius: '50%',
+                background: hovered360
+                  ? 'linear-gradient(135deg, #fbbf24, #d97706)'
+                  : 'rgba(255,255,255,0.95)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: hovered360 ? '#ffffff' : '#111827',
+                flexShrink: 0,
+                transition: 'all 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+
+              <div>
+                <p style={{
+                  margin: '0 0 2px 0', fontSize: 10,
+                  textTransform: 'uppercase', letterSpacing: '0.2em',
+                  color: 'rgba(255,255,255,0.7)',
+                  fontFamily: "'Montserrat', sans-serif", fontWeight: 600,
+                }}>
+                  Interactive
+                </p>
+                <p style={{
+                  margin: 0, fontSize: 22, fontWeight: 900,
+                  fontFamily: "'Montserrat', sans-serif",
+                  color: '#ffffff', letterSpacing: '0.04em', lineHeight: 1,
+                  textShadow: '0 2px 16px rgba(0,0,0,0.5)',
+                }}>
+                  360° TOUR
+                </p>
+                <p style={{
+                  margin: '6px 0 0 0', fontSize: 11,
+                  color: 'rgba(255,255,255,0.6)',
+                  fontFamily: "'Montserrat', sans-serif", letterSpacing: '0.08em',
+                  transition: 'color 0.3s',
+                }}>
+                  {hovered360 ? 'Click to explore →' : 'Explore the colony'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <style>{`
+        .mp-hidden { opacity: 0; }
+
+        .mp-slide-left {
+          animation: mpSlideLeft 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          opacity: 0;
+        }
+
+        .mp-slide-right {
+          animation: mpSlideRight 1s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+          opacity: 0;
+        }
+
+        .mp-row {
+          animation: mpFadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          opacity: 0;
+        }
+
+        .mp-row-delay-0 { animation-delay: 0.25s; }
+        .mp-row-delay-1 { animation-delay: 0.38s; }
+        .mp-row-delay-2 { animation-delay: 0.51s; }
+        .mp-row-delay-3 { animation-delay: 0.64s; }
+        .mp-row-delay-4 { animation-delay: 0.77s; }
+
+        @keyframes mpSlideLeft {
+          from { opacity: 0; transform: translateX(-48px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes mpSlideRight {
+          from { opacity: 0; transform: translateX(48px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes mpFadeUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes mpPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.4); }
+        }
+      `}</style>
     </div>
   );
 }
